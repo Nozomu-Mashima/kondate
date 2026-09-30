@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今日の夕飯なににする？</title>
+<style>
+:root{
+  --bg:#f6f0e6; --paper:#fffaf3; --ink:#2f241d; --sub:#8b7866; --line:#e7dccd;
+  --accent:#c4553a; --accent-2:#d9a441; --accent-soft:#f6e1d6;
+  --green:#5f7a3e; --green-soft:#e7eed9;
+  --chip:#efe6d9; --hero:#2b1f18; --hero-ink:#fbeee0;
+  --shadow:0 1px 2px rgba(60,35,15,.06),0 6px 20px rgba(60,35,15,.07);
+  --mincho:"Hiragino Mincho ProN","Yu Mincho","YuMincho","BIZ UDPMincho","Noto Serif JP",serif;
+  --gothic:"Hiragino Sans","BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1c1612; --paper:#27201a; --ink:#f3e9dd; --sub:#b09c89; --line:#3b3027;
+    --accent:#e0775a; --accent-2:#e2b45c; --accent-soft:#43291f;
+    --green:#a5c07c; --green-soft:#2d3522; --chip:#342a22; --hero:#120d0a;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--gothic);line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+
+/* ---------- ヒーロー ---------- */
+.hero{background:
+    radial-gradient(ellipse 60% 90% at 50% 0%,rgba(236,160,90,.35),transparent 70%),
+    radial-gradient(circle at 15% 110%,rgba(196,85,58,.35),transparent 45%),
+    var(--hero);
+  color:var(--hero-ink);padding:18px 16px 30px;position:relative}
+.hero-inner{max-width:880px;margin:0 auto}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.brand{font-size:.7rem;letter-spacing:.3em;opacity:.7}
+.iconbtns{display:flex;gap:6px}
+.iconbtn{white-space:nowrap;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:var(--hero-ink);
+  border-radius:999px;padding:6px 12px;font-size:.8rem;cursor:pointer;transition:.2s}
+.iconbtn:hover{background:rgba(255,255,255,.2)}
+.hero h1{font-family:var(--mincho);font-weight:600;font-size:clamp(1.7rem,5vw,2.5rem);
+  letter-spacing:.06em;margin:26px 0 4px;text-align:center}
+.hero .lead{text-align:center;opacity:.75;font-size:.88rem;margin:0 0 20px}
+.searchbox{position:relative;max-width:620px;margin:0 auto}
+.searchbox input{width:100%;padding:15px 18px 15px 46px;border-radius:999px;border:none;font-size:1rem;
+  background:var(--paper);color:var(--ink);box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:inherit}
+.searchbox input:focus{outline:3px solid var(--accent-2)}
+.searchbox::before{content:"";position:absolute;left:18px;top:50%;width:14px;height:14px;margin-top:-9px;
+  border:2px solid var(--sub);border-radius:50%}
+.searchbox::after{content:"";position:absolute;left:31px;top:50%;width:7px;height:2px;margin-top:5px;
+  background:var(--sub);transform:rotate(45deg)}
+
+/* ---------- フィルタ ---------- */
+main{max-width:880px;margin:0 auto;padding:0 16px 60px}
+.filterbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--paper);
+  border-radius:18px;box-shadow:var(--shadow);padding:6px;margin-top:-20px;position:relative;z-index:1}
+.ftab{border:none;background:none;border-radius:13px;padding:9px 4px;cursor:pointer;color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;gap:1px;font-size:.8rem;transition:.2s;position:relative}
+.ftab .ic{font-size:1.25rem;line-height:1.2}
+.ftab:hover{background:var(--chip)}
+.ftab.open{background:var(--ink);color:var(--paper)}
+.ftab .badge{position:absolute;top:4px;right:calc(50% - 26px);background:var(--accent);color:#fff;
+  font-size:.65rem;min-width:17px;height:17px;border-radius:999px;display:none;align-items:center;
+  justify-content:center;padding:0 4px;font-weight:bold}
+.ftab .badge.show{display:flex}
+.fpanel{display:none;background:var(--paper);border-radius:18px;box-shadow:var(--shadow);
+  padding:16px;margin-top:8px;animation:drop .2s ease}
+.fpanel.open{display:block}
+@keyframes drop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.frow{display:grid;grid-template-columns:5.2em 1fr;gap:8px;align-items:start;padding:7px 0;
+  border-bottom:1px dashed var(--line)}
+.frow:last-child{border-bottom:none}
+.frow .lab{font-size:.75rem;color:var(--sub);padding-top:5px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:1px solid transparent;background:var(--chip);color:var(--ink);padding:4px 11px;border-radius:999px;
+  font-size:.84rem;cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--line)}
+.chip.on{background:var(--accent);color:#fff}
+.chip.green.on{background:var(--green)}
+.panel-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.seg{display:inline-flex;background:var(--chip);border-radius:999px;padding:3px}
+.seg button{border:none;background:none;padding:4px 11px;border-radius:999px;cursor:pointer;
+  color:var(--ink);font-size:.8rem}
+.seg button.on{background:var(--paper);box-shadow:var(--shadow);font-weight:bold}
+.textbtn{background:none;border:none;color:var(--sub);font-size:.8rem;cursor:pointer;text-decoration:underline}
+
+/* 選択中の条件 */
+.active{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:12px 2px 0;min-height:0}
+.active:empty{display:none}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--accent-soft);color:var(--accent);
+  border:none;border-radius:999px;padding:3px 6px 3px 10px;font-size:.78rem;cursor:pointer}
+.pill.g{background:var(--green-soft);color:var(--green)}
+.pill b{font-weight:normal;opacity:.7;font-size:.9em}
+
+/* ツールバー */
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 2px 10px;flex-wrap:wrap}
+.summary{color:var(--sub);font-size:.85rem}
+.summary strong{font-family:var(--mincho);font-size:1.4rem;color:var(--ink);margin-right:2px}
+.tools{display:flex;gap:6px}
+.btn{border:none;border-radius:999px;padding:10px 18px;font-size:.9rem;cursor:pointer;font-weight:bold;transition:.2s}
+.btn.primary{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(196,85,58,.3)}
+.btn.primary:hover{transform:translateY(-1px)}
+.btn.ghost{background:var(--paper);color:var(--ink);box-shadow:var(--shadow)}
+.btn.ghost.on{background:var(--accent-2);color:#2b1f18}
+.btn.small{padding:7px 14px;font-size:.82rem}
+
+/* ---------- 献立ボード ---------- */
+.board{display:none;background:var(--hero);color:var(--hero-ink);border-radius:20px;padding:22px 20px 16px;
+  margin:18px 0;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.board.show{display:block;animation:drop .3s ease}
+.board::before{content:"";position:absolute;inset:8px;border:1px solid rgba(251,238,224,.18);border-radius:14px;pointer-events:none}
+.board h2{font-family:var(--mincho);font-weight:600;text-align:center;margin:0;font-size:1.25rem;letter-spacing:.3em}
+.board .en{text-align:center;font-size:.62rem;letter-spacing:.35em;opacity:.55;margin-bottom:14px}
+.kondate{display:grid;grid-template-columns:repeat(3,1fr)}
+.slot{padding:6px 12px;cursor:pointer;text-align:center;border-left:1px dashed rgba(251,238,224,.22);border-radius:8px;transition:.2s}
+.slot:first-child{border-left:none}
+.slot:hover{background:rgba(255,255,255,.06)}
+.slot .lab{font-size:.68rem;letter-spacing:.2em;color:var(--accent-2)}
+.slot .em{font-size:1.8rem;margin:4px 0}
+.slot .nm{font-family:var(--mincho);font-size:1.05rem;font-weight:600;line-height:1.35}
+.slot .t{font-size:.72rem;opacity:.6;margin-top:2px}
+.board .foot{text-align:center;margin-top:12px}
+.board .iconbtn{font-size:.78rem}
+
+/* ---------- カード ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border-radius:18px;box-shadow:var(--shadow);padding:14px 14px 12px;cursor:pointer;
+  display:flex;gap:12px;transition:.2s;border:1px solid transparent}
+.card:hover{transform:translateY(-2px);border-color:var(--line)}
+.thumb{flex:none;width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;background:var(--chip)}
+.thumb.主菜{background:#f6dccf}.thumb.副菜{background:#e3ebd3}.thumb.汁物{background:#f3e5c4}.thumb.丼・麺{background:#eadbc9}
+@media (prefers-color-scheme: dark){
+  .thumb.主菜{background:#4a2c22}.thumb.副菜{background:#2f3824}.thumb.汁物{background:#443720}.thumb.丼・麺{background:#3d3024}
+}
+.cbody{flex:1;min-width:0}
+.ctop{display:flex;justify-content:space-between;gap:6px;align-items:flex-start}
+.card h3{margin:0;font-family:var(--mincho);font-weight:600;font-size:1.05rem;line-height:1.35}
+.cmeta{font-size:.72rem;color:var(--sub);margin:2px 0 4px;letter-spacing:.02em}
+.cmeta .mine{color:var(--accent);font-weight:bold}
+.desc{font-size:.82rem;color:var(--sub);margin:0}
+.ings{font-size:.76rem;margin-top:6px;color:var(--sub)}
+.ings .h{color:var(--green);font-weight:bold}
+.need{font-size:.72rem;margin-top:4px;color:var(--accent)}
+.need.ok{color:var(--green)}
+.fav{background:none;border:none;font-size:1.15rem;cursor:pointer;color:var(--line);padding:0;line-height:1}
+.fav.on{color:var(--accent-2)}
+.empty{grid-column:1/-1;text-align:center;color:var(--sub);padding:40px 10px;font-size:.9rem}
+
+/* ---------- モーダル ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(30,18,10,.55);backdrop-filter:blur(3px);display:none;
+  align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal-bg.open{display:flex}
+.modal{background:var(--paper);border-radius:22px;max-width:540px;width:100%;max-height:90vh;overflow:auto;
+  padding:24px 22px;position:relative;animation:drop .2s ease}
+.modal h2{margin:0 0 6px;font-family:var(--mincho);font-weight:600;font-size:1.45rem}
+.modal h3{font-size:.8rem;letter-spacing:.15em;color:var(--sub);margin:18px 0 8px;font-weight:normal}
+.modal .close{position:absolute;top:12px;right:14px;background:var(--chip);border:none;width:32px;height:32px;
+  border-radius:50%;font-size:1.1rem;cursor:pointer;color:var(--ink)}
+.modal ol{padding-left:0;list-style:none;counter-reset:s;margin:0}
+.modal ol li{counter-increment:s;position:relative;padding:0 0 10px 34px}
+.modal ol li::before{content:counter(s);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:.75rem;display:flex;align-items:center;justify-content:center}
+.modal label{display:block;font-size:.8rem;margin:12px 0 4px;color:var(--sub)}
+.modal input[type=text],.modal textarea,.modal select{width:100%;padding:10px 12px;border:1px solid var(--line);
+  border-radius:12px;font-size:.95rem;background:var(--bg);color:var(--ink);font-family:inherit}
+.modal input:focus,.modal textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+.meta{display:flex;flex-wrap:wrap;gap:4px;font-size:.75rem}
+.tag{background:var(--chip);padding:2px 9px;border-radius:999px;color:var(--sub)}
+.tag.hit{background:var(--green-soft);color:var(--green);font-weight:bold}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:18px 0 4px}
+.note{font-size:.8rem;color:var(--sub)}
+footer{text-align:center;color:var(--sub);font-size:.72rem;padding:10px 16px 30px}
+
+br.sp{display:none}
+@media (max-width:560px){
+  br.sp{display:inline}
+  .brand{display:none}
+  .topbar{justify-content:flex-end}
+  .hero h1{margin-top:14px;line-height:1.35}
+  .kondate{grid-template-columns:1fr}
+  .slot{border-left:none;border-top:1px dashed rgba(251,238,224,.22);display:grid;grid-template-columns:3em 1fr;
+    text-align:left;align-items:center;column-gap:8px;padding:10px 6px}
+  .slot:first-child{border-top:none}
+  .slot .em{grid-row:1/4;margin:0;text-align:center}
+  .frow{grid-template-columns:1fr;gap:4px}
+  .frow .lab{padding-top:0}
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="topbar">
+      <span class="brand">TONIGHT'S TABLE</span>
+      <div class="iconbtns">
+        <button class="iconbtn" id="openAdd">＋ レシピ追加</button>
+        <button class="iconbtn" id="openShare">家族と共有</button>
+      </div>
+    </div>
+    <h1>今日の夕飯、<br class="sp">なににする？</h1>
+    <p class="lead">冷蔵庫の中身と、今日の気分から。</p>
+    <div class="searchbox"><input type="search" id="q" placeholder="料理名・食材・気分で探す"></div>
+  </div>
+</header>
+
+<main>
+  <nav class="filterbar">
+    <button class="ftab" data-panel="p-fridge"><span class="ic">🧊</span>冷蔵庫<span class="badge" id="b-fridge"></span></button>
+    <button class="ftab" data-panel="p-mood"><span class="ic">😋</span>気分<span class="badge" id="b-mood"></span></button>
+    <button class="ftab" data-panel="p-who"><span class="ic">👨‍👩‍👧</span>誰のため<span class="badge" id="b-who"></span></button>
+    <button class="ftab" data-panel="p-more"><span class="ic">⏱️</span>条件<span class="badge" id="b-more"></span></button>
+  </nav>
+
+  <section class="fpanel" id="p-fridge">
+    <div id="fridge"></div>
+    <div class="panel-foot">
+      <div class="seg" id="ingMode">
+        <button data-v="any" class="on">どれか使う</button>
+        <button data-v="most">ほぼ手持ちで作れる</button>
+      </div>
+      <button class="textbtn" id="clearIng">食材をクリア</button>
+    </div>
+  </section>
+  <section class="fpanel" id="p-mood"><div class="chips" id="moods"></div></section>
+  <section class="fpanel" id="p-who"><div class="chips" id="whos"></div></section>
+  <section class="fpanel" id="p-more">
+    <div class="frow"><div class="lab">ジャンル</div><div class="chips" id="genres"></div></div>
+    <div class="frow"><div class="lab">種類</div><div class="chips" id="cats"></div></div>
+    <div class="frow"><div class="lab">調理時間</div><div>
+      <div class="seg" id="timeSeg">
+        <button data-v="0" class="on">指定なし</button>
+        <button data-v="15">15分</button>
+        <button data-v="30">30分</button>
+        <button data-v="60">60分</button>
+      </div></div></div>
+  </section>
+
+  <div class="active" id="active"></div>
+
+  <section class="board" id="kondatePanel">
+    <h2>本日の献立</h2>
+    <div class="en">TODAY'S MENU</div>
+    <div class="kondate" id="kondate"></div>
+    <div class="foot"><button class="iconbtn" id="reroll">↻ 別の組み合わせ</button></div>
+  </section>
+
+  <div class="toolbar">
+    <div class="summary" id="summary"></div>
+    <div class="tools">
+      <button class="btn ghost small" id="showFavs">★ お気に入り</button>
+      <button class="btn primary small" id="makeKondate">献立を組む</button>
+    </div>
+  </div>
+  <div class="grid" id="results"></div>
+</main>
+
+<footer>レシピ・お気に入りはこのブラウザ内に保存されます ・ 家族と共有するには上の「家族と共有」から</footer>
+
+<!-- 詳細モーダル -->
+<div class="modal-bg" id="detailBg"><div class="modal" id="detail"></div></div>
+
+<!-- 追加モーダル -->
+<div class="modal-bg" id="addBg"><div class="modal">
+  <button class="close" data-close="addBg">×</button>
+  <h2>わが家のレシピを追加</h2>
+  <label>料理名 *</label><input type="text" id="aName" placeholder="例：おばあちゃんの筑前煮">
+  <label>ジャンル</label><select id="aGenre"></select>
+  <label>種類</label><select id="aCat"></select>
+  <label>調理時間（分）</label><input type="text" id="aTime" inputmode="numeric" value="30">
+  <label>主な食材（、区切り）</label><input type="text" id="aIng" placeholder="例：鶏肉、にんじん、ごぼう、れんこん">
+  <label>気分（タップで選択）</label><div class="chips" id="aMoods"></div>
+  <label>誰のため（タップで選択）</label><div class="chips" id="aWhos"></div>
+  <label>ひとこと</label><input type="text" id="aDesc" placeholder="例：お正月に必ず作る味">
+  <label>作り方（1行に1手順）</label><textarea id="aSteps" rows="5"></textarea>
+  <div class="actions"><button class="btn primary" id="saveAdd">保存する</button></div>
+</div></div>
+
+<!-- 共有モーダル -->
+<div class="modal-bg" id="shareBg"><div class="modal">
+  <button class="close" data-close="shareBg">×</button>
+  <h2>家族と共有</h2>
+  <p class="note">このHTMLファイル自体をLINE・メール・共有フォルダで送れば、家族全員が同じ標準レシピで使えます。</p>
+  <p class="note">追加した「わが家のレシピ」とお気に入りは、開いた端末のブラウザに保存されます。家族に渡すときは、下の方法でデータを書き出して送ってください。</p>
+  <div class="actions">
+    <button class="btn primary" id="exportHtml">わが家レシピ入りのHTMLを保存</button>
+  </div>
+  <p class="note">↑ 追加したレシピを組み込んだHTMLファイルを作ります。これを家族に送るのがいちばん簡単です。</p>
+  <hr style="border:none;border-top:1px solid var(--line)">
+  <div class="actions">
+    <button class="btn ghost small" id="exportJson">データだけ書き出し（.json）</button>
+    <button class="btn ghost small" id="importJsonBtn">データを読み込み</button>
+    <input type="file" id="importJson" accept=".json,application/json" hidden>
+  </div>
+  <div id="myList"></div>
+</div></div>
+
+<script>
+/* ================== レシピデータベース ==================
+   書式： 料理名|ジャンル|種類|時間(分)|主な食材|気分|誰のため|ひとこと|作り方(/区切り)
+   ここに行を足せば標準レシピを増やせます。
+*/
+const RAW = `
+肉じゃが|和|主菜|35|豚肉,じゃがいも,玉ねぎ,にんじん|あったまりたい,節約|子ども,高齢者,大人|ほっとする定番の煮物|野菜を一口大に切る/鍋で豚肉と野菜を炒める/だし・醤油・砂糖・みりんを加える/落とし蓋をして15分ほど煮る
+豚の生姜焼き|和|主菜|15|豚肉,玉ねぎ,キャベツ|がっつり,時短|子ども,大人,お弁当にも,疲れている人|ご飯が止まらない甘辛味|玉ねぎを薄切りにする/豚肉と玉ねぎを焼く/生姜・醤油・みりん・酒を絡める/千切りキャベツを添える
+鶏の唐揚げ|和|主菜|30|鶏肉|がっつり,こってり,ごちそう|子ども,大人,お弁当にも,来客・おもてなし|みんな大好きな定番|鶏肉を一口大に切る/醤油・酒・生姜・にんにくで15分漬ける/片栗粉をまぶす/170℃で揚げ、最後に高温で二度揚げ
+鶏の照り焼き|和|主菜|20|鶏肉|がっつり,節約|子ども,大人,お弁当にも|皮パリッと甘辛|鶏もも肉の皮目から焼く/裏返して蓋をし火を通す/醤油・みりん・砂糖を加えて煮絡める
+親子丼|和|丼・麺|15|鶏肉,卵,玉ねぎ,ご飯|時短,あったまりたい|子ども,高齢者,一人ごはん,疲れている人|ふわとろ卵でやさしい味|玉ねぎと鶏肉をだし・醤油・みりんで煮る/溶き卵を2回に分けて回し入れる/半熟でご飯にのせる
+牛丼|和|丼・麺|15|牛肉,玉ねぎ,ご飯|がっつり,時短|大人,一人ごはん,疲れている人|お店の味をおうちで|玉ねぎを薄切りにする/だし・醤油・砂糖・みりん・酒で玉ねぎを煮る/牛肉を加えてさっと煮る/ご飯にのせる
+さばの味噌煮|和|主菜|25|さば,ねぎ|あっさり,ヘルシー|高齢者,大人,ダイエット中|DHAたっぷりの魚料理|さばに熱湯をかけ臭みを取る/水・酒・砂糖・生姜を煮立てる/さばを入れ10分煮る/味噌を溶き入れ煮詰める
+鮭のホイル焼き|和|主菜|20|鮭,きのこ,玉ねぎ|ヘルシー,あっさり|高齢者,ダイエット中,大人,お弁当にも|洗い物が少なくて楽ちん|アルミホイルに玉ねぎ・鮭・きのこをのせる/バターと醤油を少々/包んでフライパンで蓋をして15分蒸し焼き
+鮭のムニエル|洋|主菜|15|鮭,ブロッコリー|時短,ヘルシー|子ども,高齢者,大人|バター醤油で香ばしく|鮭に塩こしょう、小麦粉をまぶす/バターで両面を焼く/醤油少々をまわしかける/茹でたブロッコリーを添える
+ぶり大根|和|主菜|40|ぶり,大根|あったまりたい,ごちそう|高齢者,大人|味しみしみの冬の定番|大根を厚めの半月切りにして下茹で/ぶりに熱湯をかける/だし・醤油・砂糖・酒・生姜で煮込む
+とんかつ|和|主菜|30|豚肉,キャベツ,卵|がっつり,こってり,ごちそう|子ども,大人,来客・おもてなし|サクサク衣でボリューム満点|豚肉の筋を切り塩こしょう/小麦粉・溶き卵・パン粉をつける/170℃で揚げる/千切りキャベツを添える
+すき焼き|和|主菜|30|牛肉,ねぎ,豆腐,白菜,卵,きのこ|ごちそう,あったまりたい|来客・おもてなし,大人,子ども|特別な日のごちそう鍋|割り下（醤油・砂糖・みりん・酒）を作る/牛脂で牛肉を焼き割り下を入れる/野菜と豆腐を入れて煮る/溶き卵につけて食べる
+白菜と豚肉のミルフィーユ鍋|和|主菜|25|白菜,豚肉,きのこ|あったまりたい,ヘルシー,節約|大人,ダイエット中,高齢者|重ねて煮るだけで見た目も華やか|白菜と豚肉を交互に重ねて切る/鍋に立てて詰める/だしを注ぎ15分煮る/ポン酢で食べる
+鶏の水炊き|和|主菜|35|鶏肉,白菜,ねぎ,豆腐,きのこ|あったまりたい,あっさり,ヘルシー|高齢者,ダイエット中,大人|鶏だしがしみるやさしい鍋|鶏肉を水と昆布で20分煮る/白菜・ねぎ・豆腐・きのこを加える/ポン酢でいただく/締めは雑炊に
+鶏と大根の煮物|和|主菜|35|鶏肉,大根|あったまりたい,節約|高齢者,大人|大根にうまみがしみる|大根を乱切りにして下茹で/鶏肉を炒める/だし・醤油・みりん・砂糖で20分煮る
+豆腐ハンバーグ|和|主菜|30|豆腐,ひき肉,玉ねぎ|ヘルシー,節約|ダイエット中,子ども,高齢者,お弁当にも|ふんわり軽くてヘルシー|豆腐を水切りする/ひき肉・豆腐・玉ねぎ・片栗粉をこねる/両面を焼き蓋をして蒸し焼き/大根おろしとポン酢で
+いかと大根の煮物|和|主菜|35|いか,大根|あったまりたい|高齢者,大人|いかのうまみで大根がおいしい|大根を下茹でする/いかを輪切りにする/だし・醤油・砂糖・みりんで大根を煮る/いかを加えてさっと煮る
+なすと豚肉の味噌炒め|和|主菜|15|なす,豚肉,ピーマン|がっつり,時短|大人,お弁当にも|甘い味噌がご飯に合う|なすとピーマンを乱切り/豚肉を炒め、なすを多めの油で炒める/ピーマンを加え、味噌・砂糖・酒・みりんで絡める
+麻婆豆腐|中|主菜|20|豆腐,ひき肉,ねぎ|ピリ辛,がっつり|大人|ご飯がすすむピリ辛の定番|ひき肉を炒め、豆板醤・にんにく・生姜を加える/鶏がらスープ・醤油・甜麺醤を加える/豆腐を入れて煮る/水溶き片栗粉でとろみ、ねぎを散らす
+麻婆なす|中|主菜|20|なす,ひき肉,ねぎ|ピリ辛,がっつり|大人|とろとろなすに旨辛あん|なすを切って油で炒める/ひき肉と豆板醤を炒める/鶏がらスープと調味料で煮る/とろみをつける
+回鍋肉|中|主菜|15|豚肉,キャベツ,ピーマン|がっつり,時短|大人,子ども|シャキシャキキャベツの甘辛炒め|キャベツはざく切り、ピーマンは乱切り/豚肉を炒める/野菜を加えて強火で炒める/甜麺醤・醤油・豆板醤で味付け
+青椒肉絲|中|主菜|20|牛肉,ピーマン|がっつり|大人,お弁当にも|細切りで食感よく|牛肉とピーマンを細切り/牛肉に下味と片栗粉/炒めてオイスターソース・醤油で味付け
+えびチリ|中|主菜|20|えび,ねぎ|ピリ辛,ごちそう|大人,来客・おもてなし|ぷりぷりえびのごちそう中華|えびの背わたを取り片栗粉をまぶす/えびを炒めて取り出す/豆板醤・ケチャップ・鶏がらスープでソース/えびを戻しとろみをつける
+八宝菜|中|主菜|25|白菜,豚肉,えび,いか,にんじん,きのこ|ヘルシー|大人,高齢者|野菜たっぷり具だくさん|具材を食べやすく切る/豚肉・魚介を炒める/野菜を加えて炒める/鶏がらスープで煮てとろみをつける
+餃子|中|主菜|45|ひき肉,キャベツ,にら|がっつり,節約|子ども,大人,来客・おもてなし|家族で包むと楽しい|キャベツ・にらをみじん切り/ひき肉と調味料でよく練る/皮で包む/焼いて水を入れ蒸し焼き
+トマトと卵の炒め物|中|副菜|10|トマト,卵|時短,節約,あっさり|子ども,一人ごはん,疲れている人|ふわふわ卵と甘酸っぱいトマト|卵を半熟に炒めて取り出す/トマトを炒める/卵を戻し塩・鶏がらスープで味付け
+棒棒鶏|中|主菜|20|鶏肉,きゅうり,トマト|さっぱり,ヘルシー|ダイエット中,大人|ごまだれで食べる蒸し鶏|鶏むね肉を酒をふってレンジで蒸す/冷まして手で裂く/きゅうり・トマトと盛る/ごまだれをかける
+豚キムチ炒め|韓|主菜|10|豚肉,キムチ,玉ねぎ,もやし|ピリ辛,時短,がっつり|大人,一人ごはん,疲れている人|10分でできるスタミナおかず|豚肉を炒める/玉ねぎ・もやしを加える/キムチを入れて炒め、醤油少々で調える
+チヂミ|韓|副菜|20|にら,卵,えび|がっつり,節約|子ども,大人|外カリ中モチ|小麦粉・片栗粉・卵・水で生地を作る/にら・えびを混ぜる/多めの油でカリッと焼く/酢醤油で食べる
+ハンバーグ|洋|主菜|40|ひき肉,玉ねぎ,卵|がっつり,ごちそう|子ども,大人,来客・おもてなし,お弁当にも|肉汁じゅわっと|玉ねぎをみじん切りにして炒め冷ます/ひき肉・卵・パン粉と粘りが出るまでこねる/成形して焼き、蓋をして蒸し焼き/ケチャップとソースでソースを作る
+ロールキャベツ|洋|主菜|50|キャベツ,ひき肉,玉ねぎ|あったまりたい,ごちそう|子ども,高齢者,大人|コトコト煮込んだやさしい味|キャベツの葉を茹でる/肉だねを包む/コンソメスープで30分煮込む
+クリームシチュー|洋|主菜|40|鶏肉,玉ねぎ,にんじん,じゃがいも,牛乳,ブロッコリー|あったまりたい|子ども,高齢者,大人|寒い日に食べたいまろやか味|具材を切って炒める/水を加えて煮る/火を止めてルウを溶かす/牛乳を加え、ブロッコリーを入れて温める
+チキンのトマト煮|洋|主菜|25|鶏肉,トマト,玉ねぎ,きのこ|ヘルシー,ごちそう|大人,ダイエット中,来客・おもてなし|トマトの酸味でさっぱり洋風|鶏肉を皮目から焼く/玉ねぎ・きのこを炒める/トマト缶とコンソメで15分煮る
+グラタン|洋|主菜|40|鶏肉,玉ねぎ,牛乳,チーズ,マカロニ|こってり,ごちそう,あったまりたい|子ども,来客・おもてなし|とろ〜りチーズが熱々|鶏肉・玉ねぎを炒める/小麦粉を加え牛乳でのばしてホワイトソースに/茹でたマカロニと合わせる/チーズをのせてトースターで焼く
+カレーライス|洋|丼・麺|45|豚肉,玉ねぎ,にんじん,じゃがいも,ご飯|がっつり,節約|子ども,大人|困ったときの鉄板メニュー|具材を切って炒める/水を加えて20分煮る/火を止めてルウを溶かす/弱火で10分煮込む
+オムライス|洋|丼・麺|25|卵,鶏肉,玉ねぎ,ご飯|ごちそう|子ども,一人ごはん|子どもが喜ぶ洋食|鶏肉と玉ねぎを炒める/ご飯とケチャップでチキンライスに/薄焼き卵で包む
+ナポリタン|洋|丼・麺|20|パスタ,ソーセージ,玉ねぎ,ピーマン|がっつり,節約|子ども,一人ごはん|懐かしの喫茶店の味|パスタを茹でる/ソーセージ・玉ねぎ・ピーマンを炒める/ケチャップを炒めて酸味を飛ばす/パスタと絡める
+カルボナーラ|洋|丼・麺|15|パスタ,ベーコン,卵,チーズ|こってり,時短|大人,一人ごはん|濃厚クリーミー|パスタを茹でる/ベーコンを炒める/卵・チーズ・黒こしょうを混ぜる/火を止めて全部を絡める
+きのこの和風パスタ|洋|丼・麺|15|パスタ,きのこ,ベーコン|時短,あっさり|大人,一人ごはん,疲れている人|醤油バターが香る|パスタを茹でる/ベーコンときのこをバターで炒める/醤油で味付けしパスタと和える/刻みのりをのせる
+ツナとトマトの冷製パスタ|洋|丼・麺|15|パスタ,トマト,ツナ缶|さっぱり,時短|大人,一人ごはん|暑い日にぴったり|パスタを表示より長めに茹で冷水で締める/トマト・ツナ・オリーブオイル・塩で和える/パスタと混ぜる
+ガパオライス|エスニック|丼・麺|20|ひき肉,ピーマン,玉ねぎ,卵,ご飯|ピリ辛,時短|大人,一人ごはん|バジル香るタイごはん|ひき肉・玉ねぎ・ピーマンを炒める/ナンプラー・オイスターソースで味付け/バジルを加える/ご飯に盛り目玉焼きをのせる
+タコライス|エスニック|丼・麺|20|ひき肉,レタス,トマト,チーズ,ご飯|がっつり,時短|子ども,大人|彩りよく野菜もとれる|ひき肉を炒めケチャップ・ソース・カレー粉で味付け/ご飯にレタス・ひき肉・トマト・チーズをのせる
+トムヤムクン風スープ|エスニック|汁物|20|えび,きのこ,トマト|ピリ辛,さっぱり|大人|酸っぱ辛いクセになる味|えびときのこを鶏がらスープで煮る/トマトを加える/ナンプラー・レモン汁・豆板醤で調える
+生春巻き|エスニック|副菜|20|えび,レタス,きゅうり,にんじん|さっぱり,ヘルシー|ダイエット中,来客・おもてなし|見た目もかわいいヘルシー前菜|えびを茹でる/野菜を細切りにする/ライスペーパーを戻して巻く/スイートチリソースで
+ビビンバ|韓|丼・麺|20|ひき肉,もやし,ほうれん草,にんじん,卵,ご飯|がっつり|大人,子ども|混ぜて食べる野菜たっぷり丼|ナムル3種を作る/ひき肉を甘辛く炒める/ご飯にのせ卵黄を落とす/コチュジャンで混ぜて食べる
+チャーハン|中|丼・麺|10|ご飯,卵,ねぎ,ハム|時短,節約|子ども,一人ごはん,疲れている人|冷やご飯でパラパラに|卵を炒めてご飯を加える/ハム・ねぎを入れて炒める/塩こしょう・醤油で味付け
+ちらし寿司|和|丼・麺|40|ご飯,卵,えび,にんじん,きゅうり|ごちそう,さっぱり|来客・おもてなし,子ども|お祝いの日に華やかに|すし酢でご飯を酢飯にする/具材を煮たり茹でたりする/錦糸卵を作る/酢飯に彩りよくのせる
+雑炊|和|丼・麺|10|ご飯,卵,ねぎ|あったまりたい,あっさり,時短|高齢者,疲れている人,一人ごはん|胃にやさしいほっとする一杯|だしを煮立てご飯を入れる/醤油・塩で味付け/溶き卵を回し入れねぎを散らす
+肉うどん|和|丼・麺|15|うどん,牛肉,ねぎ|あったまりたい,時短|子ども,高齢者,一人ごはん,疲れている人|甘辛いお肉がのったうどん|牛肉を醤油・砂糖で甘辛く煮る/うどんをだしつゆで温める/肉とねぎをのせる
+焼きうどん|和|丼・麺|15|うどん,豚肉,キャベツ,にんじん|時短,節約|子ども,一人ごはん|冷蔵庫の残り野菜で|豚肉と野菜を炒める/うどんを加えてほぐす/醤油・めんつゆで味付けし、かつお節をかける
+焼きそば|中|丼・麺|15|中華麺,豚肉,キャベツ,もやし,にんじん|がっつり,時短,節約|子ども,大人|ソースの香りで食欲アップ|豚肉と野菜を炒める/麺を加えて少量の水でほぐす/ソースで味付け
+冷やし中華|中|丼・麺|20|中華麺,きゅうり,ハム,卵,トマト|さっぱり|子ども,大人|暑い日の定番|錦糸卵を作る/具材を細切り/麺を茹でて冷水で締める/盛り付けてタレをかける
+豚汁|和|汁物|25|豚肉,大根,にんじん,ねぎ,豆腐|あったまりたい,節約|子ども,高齢者,大人|具だくさんでおかずになる汁物|具材を切る/豚肉と野菜を炒める/だしで煮る/味噌を溶き豆腐・ねぎを加える
+豆腐とわかめの味噌汁|和|汁物|10|豆腐,ねぎ|時短,あっさり,節約|子ども,高齢者,大人|毎日の基本の汁物|だしを温める/豆腐とわかめを入れる/味噌を溶きねぎを散らす
+けんちん汁|和|汁物|25|大根,にんじん,ごぼう,豆腐|あったまりたい,ヘルシー|高齢者,ダイエット中|根菜たっぷりで体ぽかぽか|根菜を切ってごま油で炒める/豆腐をくずし入れる/だしで煮て醤油で味付け
+卵とわかめの中華スープ|中|汁物|10|卵,ねぎ|時短,あっさり|子ども,高齢者,大人|ふわふわ卵のやさしいスープ|鶏がらスープを煮立てる/わかめを入れる/水溶き片栗粉でとろみ/溶き卵を回し入れる
+キムチチゲ|韓|汁物|20|キムチ,豚肉,豆腐,ねぎ|ピリ辛,あったまりたい|大人|体の芯から温まる|豚肉とキムチを炒める/水と鶏がらスープを加える/豆腐・ねぎを入れて煮る/味噌で調える
+ミネストローネ|洋|汁物|30|トマト,玉ねぎ,にんじん,キャベツ,ベーコン|ヘルシー,あったまりたい|子ども,ダイエット中,大人|野菜がたっぷりとれる|野菜を小さな角切りにする/ベーコンと野菜を炒める/トマト缶・水・コンソメで20分煮る
+かぼちゃのポタージュ|洋|汁物|25|かぼちゃ,玉ねぎ,牛乳|あったまりたい|子ども,高齢者|自然な甘さのとろりスープ|かぼちゃと玉ねぎを煮る/つぶすかミキサーにかける/牛乳でのばし塩で調える
+だし巻き卵|和|副菜|10|卵|時短,あっさり|子ども,高齢者,お弁当にも|じゅわっとだしがあふれる|卵・だし・醤油・みりんを混ぜる/卵焼き器で数回に分けて巻く
+ほうれん草のおひたし|和|副菜|5|ほうれん草|ヘルシー,さっぱり,時短|高齢者,ダイエット中|あと一品に|ほうれん草を茹でて水にとる/絞って切る/だし醤油をかけ、かつお節をのせる
+ほうれん草とベーコンのソテー|洋|副菜|10|ほうれん草,ベーコン|時短|子ども,お弁当にも|バターの香りで子どもも食べやすい|ベーコンを炒める/ほうれん草を加えて炒める/塩こしょう・バターで味付け
+小松菜と油揚げの煮びたし|和|副菜|10|小松菜,油揚げ|ヘルシー,時短,節約|高齢者,ダイエット中|カルシウムたっぷり|小松菜と油揚げを切る/だし・醤油・みりんで煮立てる/小松菜を加えさっと煮る
+しらすと小松菜の炒め物|和|副菜|10|小松菜,しらす|ヘルシー,時短|子ども,高齢者|しらすの塩気がちょうどいい|ごま油で小松菜を炒める/しらすを加える/醤油少々で調える
+きんぴらごぼう|和|副菜|15|ごぼう,にんじん|節約|高齢者,大人,お弁当にも|常備菜にもなる|ごぼう・にんじんを細切り/ごま油で炒める/醤油・砂糖・みりんで炒り煮/ごまをふる
+冷奴 薬味のせ|和|副菜|5|豆腐,ねぎ|さっぱり,時短,ヘルシー|ダイエット中,大人|切るだけ一品|豆腐を切って器に/ねぎ・生姜・かつお節をのせる/醤油をかける
+納豆オムレツ|和|副菜|10|納豆,卵,ねぎ|時短,節約|一人ごはん,大人|意外な組み合わせがおいしい|納豆とねぎを混ぜる/溶き卵を焼いて納豆を包む
+しらすおろし|和|副菜|5|しらす,大根|さっぱり,時短,ヘルシー|高齢者,ダイエット中|さっぱり箸休め|大根をおろして水気を切る/しらすをのせる/ポン酢をかける
+ツナと大根のサラダ|和|副菜|10|大根,ツナ缶,レタス|さっぱり,時短|ダイエット中,大人|シャキシャキ食感|大根を細切り/ツナとマヨネーズ・醤油で和える/レタスに盛る
+ツナとキャベツの蒸し煮|和|副菜|10|キャベツ,ツナ缶|時短,節約|子ども,お弁当にも|キャベツの甘みが引き立つ|キャベツをざく切り/ツナと一緒にフライパンに/蓋をして蒸し煮、塩こしょうで
+もやしのナムル|韓|副菜|5|もやし|時短,節約,ヘルシー|ダイエット中,大人|レンジで一瞬|もやしをレンジで加熱/水気を切る/ごま油・鶏がらスープ・にんにく・ごまで和える
+きゅうりの浅漬け|和|副菜|5|きゅうり|さっぱり,時短,節約|大人,高齢者|箸休めにぴったり|きゅうりを乱切り/塩昆布と一緒に袋でもむ/10分おく
+ポテトサラダ|洋|副菜|25|じゃがいも,きゅうり,にんじん,ハム|節約|子ども,お弁当にも|作り置きにも便利|じゃがいも・にんじんを茹でてつぶす/きゅうりを塩もみ/ハムと一緒にマヨネーズで和える
+ジャーマンポテト|洋|副菜|15|じゃがいも,ベーコン,玉ねぎ|がっつり|子ども,大人|おつまみにもなる|じゃがいもをレンジで加熱/ベーコン・玉ねぎと炒める/じゃがいもを加え塩こしょう
+シーザーサラダ|洋|副菜|10|レタス,ベーコン,チーズ,卵|さっぱり|大人,来客・おもてなし|カリカリベーコンがアクセント|ベーコンをカリカリに焼く/レタスをちぎる/温泉卵・粉チーズ・ドレッシングをかける
+ブロッコリーと卵のサラダ|洋|副菜|15|ブロッコリー,卵|ヘルシー|子ども,ダイエット中,お弁当にも|たんぱく質もとれる|ブロッコリーを茹でる/ゆで卵を作って刻む/マヨネーズで和える
+かぼちゃの煮物|和|副菜|20|かぼちゃ|あったまりたい,節約|子ども,高齢者|ほっくり甘い|かぼちゃを切る/皮を下にして鍋に並べる/だし・砂糖・醤油で煮る
+茶碗蒸し|和|副菜|25|卵,鶏肉,えび,きのこ|ごちそう,あっさり|高齢者,来客・おもてなし|つるんとやさしい|卵とだしを混ぜてこす/器に具を入れ卵液を注ぐ/弱火で蒸す
+`;
+
+const MOODS = ["がっつり","さっぱり","あっさり","こってり","ピリ辛","あったまりたい","時短","ヘルシー","節約","ごちそう"];
+const MOOD_EMOJI = {"がっつり":"💪","さっぱり":"🍋","あっさり":"🍵","こってり":"🧀","ピリ辛":"🌶️","あったまりたい":"♨️","時短":"⏱️","ヘルシー":"🥗","節約":"💰","ごちそう":"🎉"};
+const WHOS = ["子ども","大人","高齢者","ダイエット中","疲れている人","一人ごはん","来客・おもてなし","お弁当にも"];
+const WHO_EMOJI = {"子ども":"🧒","大人":"🧑","高齢者":"👴","ダイエット中":"🏃","疲れている人":"😪","一人ごはん":"🙋","来客・おもてなし":"🎎","お弁当にも":"🍱"};
+const GENRES = ["和","洋","中","韓","エスニック"];
+const CATS = ["主菜","副菜","汁物","丼・麺"];
+const CAT_EMOJI = {"主菜":"🍖","副菜":"🥬","汁物":"🍲","丼・麺":"🍜"};
+const ING_GROUPS = {
+  "お肉":["豚肉","鶏肉","牛肉","ひき肉","ベーコン","ハム","ソーセージ"],
+  "魚介":["鮭","さば","ぶり","えび","いか","しらす","ツナ缶"],
+  "卵・大豆・乳":["卵","豆腐","油揚げ","納豆","牛乳","チーズ"],
+  "野菜":["玉ねぎ","にんじん","じゃがいも","キャベツ","白菜","大根","ねぎ","もやし","ほうれん草","小松菜","ピーマン","なす","トマト","きゅうり","レタス","ブロッコリー","かぼちゃ","ごぼう","にら","きのこ"],
+  "主食・その他":["ご飯","パスタ","マカロニ","うどん","中華麺","キムチ"]
+};
+
+/* ============ 保存（このブラウザ内） ============ */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("kondate_"+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("kondate_"+k, JSON.stringify(v)); }catch(e){} }
+};
+/* HTML書き出し時にここへわが家レシピが埋め込まれる */
+const EMBEDDED = /*EMBED_START*/[]/*EMBED_END*/;
+
+function parseRaw(){
+  return RAW.trim().split("\n").filter(l=>l.trim()).map((l,i)=>{
+    const [name,genre,cat,time,ing,moods,who,desc,steps] = l.split("|");
+    return {id:"s"+i,name,genre,cat,time:+time,ing:ing.split(","),moods:moods?moods.split(","):[],who:who?who.split(","):[],desc:desc||"",steps:(steps||"").split("/").filter(Boolean)};
+  });
+}
+function mergeCustom(){
+  const map = new Map();
+  [...EMBEDDED, ...store.get("custom", [])].forEach(r=>map.set(r.id, r));
+  return [...map.values()].map(r=>({...r, custom:true}));
+}
+let DB = [];
+function rebuildDB(){ DB = [...parseRaw(), ...mergeCustom()]; }
+rebuildDB();
+
+/* ============ 状態 ============ */
+const S = {
+  q:"", ings:new Set(), ingMode:"any", moods:new Set(), whos:new Set(),
+  genres:new Set(), cats:new Set(), time:0, favOnly:false,
+  favs:new Set(store.get("favs", []))
+};
+
+/* 全角/カナ → ひらがな・小文字に正規化 */
+function norm(s){
+  return (s||"").toLowerCase()
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/[\u30a1-\u30f6]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+}
+/* ひらがな入力・言い換えでも見つかるように（読み → 表記） */
+const ALIASES = {
+  "とり":["鶏"],"とりにく":["鶏肉"],"ちきん":["鶏"],"ぶた":["豚"],"ぶたにく":["豚肉"],"ぽーく":["豚"],
+  "ぎゅう":["牛"],"ぎゅうにく":["牛肉"],"びーふ":["牛"],"にく":["肉"],"ひきにく":["ひき肉"],"みんち":["ひき肉"],
+  "さかな":["鮭","さば","ぶり","しらす","つな"],"魚":["鮭","さば","ぶり","しらす","つな"],"しゃけ":["鮭"],"さけ":["鮭"],
+  "たまご":["卵"],"とうふ":["豆腐"],"あぶらあげ":["油揚げ"],"なっとう":["納豆"],"ぎゅうにゅう":["牛乳"],
+  "たまねぎ":["玉ねぎ"],"ねぎ":["ねぎ"],"はくさい":["白菜"],"だいこん":["大根"],"こまつな":["小松菜"],"ほうれんそう":["ほうれん草"],
+  "ごはん":["ご飯"],"めし":["ご飯"],"どんぶり":["丼"],"めん":["麺","うどん","ぱすた"],"すーぷ":["汁物","すーぷ"],"しる":["汁"],
+  "ぴりから":["ぴり辛"],"からい":["ぴり辛"],"じたん":["時短"],"かんたん":["時短"],"はやい":["時短"],"せつやく":["節約"],
+  "へるしー":["へるしー"],"だいえっと":["だいえっと"],"こども":["子ども"],"おべんとう":["お弁当"],"べんとう":["弁当"],
+  "なべ":["鍋"],"にもの":["煮"],"いためもの":["炒め"],"あげもの":["揚げ"],"わしょく":["和"],"ようしょく":["洋"],"ちゅうか":["中"]
+};
+const expand = w=>[w, ...(ALIASES[w]||[]).map(norm)];
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ============ UI構築 ============ */
+function chipList(el, items, set, emoji, cls=""){
+  el.innerHTML = items.map(v=>`<button class="chip ${cls} ${set.has(v)?"on":""}" data-v="${esc(v)}">${emoji&&emoji[v]?emoji[v]+" ":""}${esc(v)}</button>`).join("");
+  el.onclick = e=>{
+    const b = e.target.closest(".chip"); if(!b) return;
+    const v = b.dataset.v;
+    set.has(v) ? set.delete(v) : set.add(v);
+    b.classList.toggle("on");
+    render();
+  };
+}
+function buildFridge(){
+  // DBにある食材でグループ外のものは「その他」に
+  const known = new Set(Object.values(ING_GROUPS).flat());
+  const extra = [...new Set(DB.flatMap(r=>r.ing))].filter(i=>!known.has(i));
+  const groups = {...ING_GROUPS}; if(extra.length) groups["その他"] = extra;
+  const f = $("#fridge"); f.innerHTML = "";
+  for(const [g, items] of Object.entries(groups)){
+    const row = document.createElement("div"); row.className="frow";
+    const lab = document.createElement("div"); lab.className="lab"; lab.textContent=g;
+    const box = document.createElement("div"); box.className="chips";
+    row.append(lab, box); f.append(row);
+    chipList(box, items, S.ings, null, "green");
+  }
+}
+/* 条件タブ：押したパネルだけ開く */
+document.querySelector(".filterbar").onclick = e=>{
+  const t = e.target.closest(".ftab"); if(!t) return;
+  const wasOpen = t.classList.contains("open");
+  document.querySelectorAll(".ftab").forEach(x=>x.classList.remove("open"));
+  document.querySelectorAll(".fpanel").forEach(x=>x.classList.remove("open"));
+  if(!wasOpen){ t.classList.add("open"); $("#"+t.dataset.panel).classList.add("open"); }
+};
+function setTime(v){
+  S.time = v;
+  document.querySelectorAll("#timeSeg button").forEach(b=>b.classList.toggle("on", +b.dataset.v===v));
+}
+/* 選択中の条件を1行にまとめて表示（タップで解除） */
+function renderActive(){
+  const pills = [];
+  const add = (label, kind, key, v)=>pills.push(`<button class="pill ${kind}" data-k="${key}" data-v="${esc(v)}">${esc(label)} <b>✕</b></button>`);
+  S.ings.forEach(v=>add(v,"g","ings",v));
+  S.moods.forEach(v=>add(v,"","moods",v));
+  S.whos.forEach(v=>add(v+"向け","","whos",v));
+  S.genres.forEach(v=>add(v+"食","","genres",v));
+  S.cats.forEach(v=>add(v,"","cats",v));
+  if(S.time) add(S.time+"分以内","","time","");
+  if(pills.length) pills.push(`<button class="textbtn" id="resetAll">すべて解除</button>`);
+  $("#active").innerHTML = pills.join("");
+  const n = {fridge:S.ings.size, mood:S.moods.size, who:S.whos.size, more:S.genres.size+S.cats.size+(S.time?1:0)};
+  for(const [k,c] of Object.entries(n)){ const b=$("#b-"+k); b.textContent=c; b.classList.toggle("show", c>0); }
+}
+$("#active").onclick = e=>{
+  if(e.target.id==="resetAll") return resetAll();
+  const p = e.target.closest(".pill"); if(!p) return;
+  if(p.dataset.k==="time") setTime(0); else S[p.dataset.k].delete(p.dataset.v);
+  buildUI(); render();
+};
+function segControl(el, onChange){
+  el.onclick = e=>{
+    const b = e.target.closest("button"); if(!b) return;
+    el.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); onChange(b.dataset.v); render();
+  };
+}
+function buildUI(){
+  buildFridge();
+  chipList($("#moods"), MOODS, S.moods, MOOD_EMOJI);
+  chipList($("#whos"), WHOS, S.whos, WHO_EMOJI);
+  chipList($("#genres"), GENRES, S.genres);
+  chipList($("#cats"), CATS, S.cats, CAT_EMOJI);
+}
+segControl($("#ingMode"), v=>S.ingMode=v);
+segControl($("#timeSeg"), v=>S.time=+v);
+$("#q").addEventListener("input", e=>{ S.q=e.target.value; render(); });
+$("#clearIng").onclick = ()=>{ S.ings.clear(); buildFridge(); render(); };
+$("#showFavs").onclick = e=>{ S.favOnly=!S.favOnly; e.currentTarget.classList.toggle("on",S.favOnly); render(); };
+function resetAll(){
+  [S.ings,S.moods,S.whos,S.genres,S.cats].forEach(s=>s.clear());
+  setTime(0);
+  $("#kondatePanel").classList.remove("show");
+  buildUI(); render();
+}
+
+/* ============ 検索ロジック ============ */
+function evaluate(r){
+  // フリーワード（スペース区切りはAND）
+  if(S.q.trim()){
+    const hay = norm([r.name,r.genre,r.cat,r.desc,...r.ing,...r.moods,...r.who,...r.steps].join(" "));
+    const words = norm(S.q).split(/[\s　]+/).filter(Boolean);
+    if(!words.every(w=>expand(w).some(x=>hay.includes(x)))) return null;
+  }
+  if(S.favOnly && !S.favs.has(r.id)) return null;
+  if(S.genres.size && !S.genres.has(r.genre)) return null;
+  if(S.cats.size && !S.cats.has(r.cat)) return null;
+  if(S.time && r.time > S.time) return null;
+  const moodHit = r.moods.filter(m=>S.moods.has(m)).length + (S.moods.has("時短") && r.time<=15 && !r.moods.includes("時短") ? 1 : 0);
+  if(S.moods.size && !moodHit) return null;
+  const whoHit = r.who.filter(w=>S.whos.has(w)).length;
+  if(S.whos.size && !whoHit) return null;
+
+  const have = r.ing.filter(i=>S.ings.has(i));
+  const miss = r.ing.filter(i=>!S.ings.has(i));
+  if(S.ings.size){
+    if(!have.length) return null;
+    if(S.ingMode==="most" && miss.length > 1) return null; // 足りないのは1品まで
+  }
+  const ratio = r.ing.length ? have.length / r.ing.length : 0;
+  const score = have.length*10 + ratio*20 - miss.length*(S.ings.size?2:0) + moodHit*6 + whoHit*6 + (S.favs.has(r.id)?3:0);
+  return {r, have, miss, score};
+}
+function search(){
+  return DB.map(evaluate).filter(Boolean).sort((a,b)=>b.score-a.score || a.r.time-b.r.time);
+}
+
+/* ============ 表示 ============ */
+function card(x){
+  const r = x.r, fav = S.favs.has(r.id);
+  const ings = r.ing.map(i=>S.ings.has(i) ? `<span class="h">${esc(i)}</span>` : esc(i)).join("・");
+  const need = !S.ings.size ? "" : x.miss.length
+    ? `<div class="need">買い足し：${x.miss.map(esc).join("・")}</div>` : `<div class="need ok">手持ちで作れます</div>`;
+  return `<article class="card" data-id="${esc(r.id)}">
+    <div class="thumb ${esc(r.cat)}">${CAT_EMOJI[r.cat]||"🍽️"}</div>
+    <div class="cbody">
+      <div class="ctop"><h3>${esc(r.name)}</h3>
+        <button class="fav ${fav?"on":""}" data-fav="${esc(r.id)}" title="お気に入り" aria-label="お気に入り">★</button></div>
+      <div class="cmeta">${esc(r.genre)} ・ ${esc(r.cat)} ・ ${r.time}分${r.custom?' ・ <span class="mine">わが家</span>':""}</div>
+      <p class="desc">${esc(r.desc)}</p>
+      <div class="ings">${ings}</div>${need}
+    </div>
+  </article>`;
+}
+function render(){
+  const list = search();
+  renderActive();
+  $("#summary").innerHTML = `<strong>${list.length}</strong>品 <span style="opacity:.7">／ 全${DB.length}品</span>`;
+  $("#results").innerHTML = list.length ? list.map(card).join("") :
+    `<div class="empty">条件に合う料理が見つかりませんでした。<br>条件を少し減らしてみてください。</div>`;
+}
+$("#results").onclick = e=>{
+  const f = e.target.closest("[data-fav]");
+  if(f){ toggleFav(f.dataset.fav); e.stopPropagation(); return; }
+  const c = e.target.closest(".card"); if(c) openDetail(c.dataset.id);
+};
+function toggleFav(id){
+  S.favs.has(id) ? S.favs.delete(id) : S.favs.add(id);
+  store.set("favs", [...S.favs]); render();
+}
+
+/* ============ 詳細 ============ */
+function openDetail(id){
+  const r = DB.find(x=>x.id===id); if(!r) return;
+  $("#detail").innerHTML = `
+    <button class="close" data-close="detailBg">×</button>
+    <div class="thumb ${esc(r.cat)}" style="margin-bottom:10px">${CAT_EMOJI[r.cat]||"🍽️"}</div>
+    <h2>${esc(r.name)}</h2>
+    <div class="cmeta">${esc(r.genre)} ・ ${esc(r.cat)} ・ ${r.time}分</div>
+    <p class="desc">${esc(r.desc)}</p>
+    <div class="meta" style="margin-top:10px">${r.moods.map(m=>`<span class="tag">${MOOD_EMOJI[m]||""} ${esc(m)}</span>`).join("")}
+      ${r.who.map(w=>`<span class="tag">${WHO_EMOJI[w]||""} ${esc(w)}</span>`).join("")}</div>
+    <h3>材料</h3>
+    <div class="meta">${r.ing.map(i=>`<span class="tag ${S.ings.has(i)?"hit":""}">${S.ings.has(i)?"✓ ":""}${esc(i)}</span>`).join("")}</div>
+    <p class="note">※ 調味料は家にあるものを使ってください</p>
+    <h3>作り方</h3>
+    <ol>${r.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>
+    <div class="actions">
+      <button class="btn ${S.favs.has(r.id)?"primary":"ghost"}" id="dFav">${S.favs.has(r.id)?"★ お気に入り済み":"☆ お気に入りに追加"}</button>
+      ${r.custom?`<button class="btn ghost" id="dDel">このレシピを削除</button>`:""}
+    </div>`;
+  $("#dFav").onclick = ()=>{ toggleFav(r.id); openDetail(r.id); };
+  if(r.custom) $("#dDel").onclick = ()=>{
+    if(!confirm(`「${r.name}」を削除しますか？`)) return;
+    store.set("custom", store.get("custom",[]).filter(x=>x.id!==r.id));
+    rebuildDB(); buildFridge(); render(); closeModal("detailBg");
+  };
+  $("#detailBg").classList.add("open");
+}
+function closeModal(id){ $("#"+id).classList.remove("open"); }
+document.addEventListener("click", e=>{
+  const c = e.target.closest("[data-close]"); if(c) closeModal(c.dataset.close);
+  if(e.target.classList.contains("modal-bg")) e.target.classList.remove("open");
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") document.querySelectorAll(".modal-bg.open").forEach(m=>m.classList.remove("open")); });
+
+/* ============ 献立を組む ============ */
+function pickWeighted(arr, exclude){
+  const pool = arr.filter(x=>!exclude.has(x.r.id)); if(!pool.length) return null;
+  const min = Math.min(...pool.map(x=>x.score));
+  const w = pool.map(x=>x.score-min+5);
+  let t = Math.random()*w.reduce((a,b)=>a+b,0);
+  for(let i=0;i<pool.length;i++){ t-=w[i]; if(t<=0) return pool[i]; }
+  return pool[pool.length-1];
+}
+function makeKondate(){
+  const hits = search();
+  // 副菜・汁物は種類・ジャンル指定を無視して補完（食材・気分・誰のためは考慮）
+  const saveCats = S.cats; S.cats = new Set();
+  const loose = search(); S.cats = saveCats;
+  const all = DB.map(r=>({r,score:0,have:[],miss:[]}));
+  const by = (list, cats)=>list.filter(x=>cats.includes(x.r.cat));
+  const used = new Set();
+  const main = pickWeighted(by(hits,["主菜","丼・麺"]),used) || pickWeighted(by(loose,["主菜","丼・麺"]),used) || pickWeighted(by(all,["主菜"]),used);
+  if(main) used.add(main.r.id);
+  const side = pickWeighted(by(loose,["副菜"]),used) || pickWeighted(by(all,["副菜"]),used);
+  if(side) used.add(side.r.id);
+  const soup = pickWeighted(by(loose,["汁物"]),used) || pickWeighted(by(all,["汁物"]),used);
+  const slots = [["MAIN",main],["SIDE",side],["SOUP",soup]].filter(s=>s[1]);
+  $("#kondate").innerHTML = slots.map(([lab,x])=>`<div class="slot" data-id="${esc(x.r.id)}">
+    <div class="em">${CAT_EMOJI[x.r.cat]}</div><div class="lab">${lab}</div>
+    <div class="nm">${esc(x.r.name)}</div><div class="t">${x.r.time}分</div></div>`).join("");
+  $("#kondatePanel").classList.add("show");
+  $("#kondatePanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("#makeKondate").onclick = makeKondate;
+$("#reroll").onclick = makeKondate;
+$("#kondate").onclick = e=>{ const s=e.target.closest(".slot"); if(s) openDetail(s.dataset.id); };
+
+/* ============ レシピ追加 ============ */
+const addMoods = new Set(), addWhos = new Set();
+$("#openAdd").onclick = ()=>{
+  $("#aGenre").innerHTML = GENRES.map(g=>`<option>${g}</option>`).join("");
+  $("#aCat").innerHTML = CATS.map(g=>`<option>${g}</option>`).join("");
+  addMoods.clear(); addWhos.clear();
+  chipListStatic($("#aMoods"), MOODS, addMoods, MOOD_EMOJI);
+  chipListStatic($("#aWhos"), WHOS, addWhos, WHO_EMOJI);
+  $("#addBg").classList.add("open");
+};
+function chipListStatic(el, items, set, emoji){
+  el.innerHTML = items.map(v=>`<button class="chip" data-v="${esc(v)}">${emoji[v]||""} ${esc(v)}</button>`).join("");
+  el.onclick = e=>{ const b=e.target.closest(".chip"); if(!b) return; const v=b.dataset.v; set.has(v)?set.delete(v):set.add(v); b.classList.toggle("on"); };
+}
+$("#saveAdd").onclick = ()=>{
+  const name = $("#aName").value.trim();
+  if(!name){ alert("料理名を入力してください"); return; }
+  const r = {
+    id:"c"+Date.now(), name, genre:$("#aGenre").value, cat:$("#aCat").value,
+    time: parseInt($("#aTime").value.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)))||30,
+    ing: $("#aIng").value.split(/[、,，\s]+/).map(s=>s.trim()).filter(Boolean),
+    moods:[...addMoods], who:[...addWhos], desc:$("#aDesc").value.trim(),
+    steps: $("#aSteps").value.split("\n").map(s=>s.trim()).filter(Boolean)
+  };
+  store.set("custom", [...store.get("custom",[]), r]);
+  ["#aName","#aIng","#aDesc","#aSteps"].forEach(s=>$(s).value="");
+  rebuildDB(); buildFridge(); render(); closeModal("addBg");
+  alert(`「${name}」を追加しました！`);
+};
+
+/* ============ 共有 ============ */
+function download(name, text, type){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text],{type}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+function allCustom(){ return DB.filter(r=>r.custom).map(({custom,...r})=>r); }
+$("#openShare").onclick = ()=>{
+  const mine = allCustom();
+  $("#myList").innerHTML = `<p class="note">わが家のレシピ：${mine.length}品 ${mine.length?"（"+mine.map(r=>esc(r.name)).join("、")+"）":""}</p>`;
+  $("#shareBg").classList.add("open");
+};
+$("#exportJson").onclick = ()=>download("kondate-data.json", JSON.stringify({custom:allCustom(), favs:[...S.favs]}, null, 2), "application/json");
+$("#importJsonBtn").onclick = ()=>$("#importJson").click();
+$("#importJson").onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try{
+      const d = JSON.parse(rd.result);
+      const cur = store.get("custom",[]); const ids = new Set(cur.map(r=>r.id));
+      const add = (d.custom||[]).filter(r=>r && r.name && !ids.has(r.id));
+      store.set("custom", [...cur, ...add]);
+      (d.favs||[]).forEach(id=>S.favs.add(id)); store.set("favs",[...S.favs]);
+      rebuildDB(); buildFridge(); render();
+      alert(`${add.length}品のレシピを読み込みました`);
+      closeModal("shareBg");
+    }catch(err){ alert("読み込めませんでした。ファイルを確認してください。"); }
+  };
+  rd.readAsText(f); e.target.value="";
+};
+$("#exportHtml").onclick = ()=>{
+  // 画面状態ではなく読み込み時のHTMLを使い、スクリプト内の埋め込みデータだけ差し替え
+  const src = document.querySelector("script").textContent
+    .replace(/\/\*EMBED_START\*\/[\s\S]*?\/\*EMBED_END\*\//, "/*EMBED_START*/"+JSON.stringify(allCustom()).replace(/</g,"\\u003c")+"/*EMBED_END*/");
+  const clean = ORIGINAL_HTML.replace(/<script>[\s\S]*<\/script>/, ()=>"<script>"+src+"<\/script>");
+  download("kondate.html", clean, "text/html");
+};
+const ORIGINAL_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+
+/* ============ 起動 ============ */
+buildUI();
+render();
+</script>
+</body>
+</html>
